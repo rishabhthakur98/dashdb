@@ -3,8 +3,10 @@ use std::{
     net::TcpStream,
 };
 use dashmap::DashMap;
+use tracing::instrument;
 use crate::printerror;
 
+#[instrument(level = "trace")]
 pub fn set_key_value(stream: &mut TcpStream, shared_map: &DashMap<Vec<u8>, Vec<u8>>) -> bool {
     let mut request_key_value_length: [u8; 4] = [0, 0, 0, 0];
     printerror!(stream.read_exact(&mut request_key_value_length));
@@ -32,6 +34,7 @@ pub fn set_key_value(stream: &mut TcpStream, shared_map: &DashMap<Vec<u8>, Vec<u
     true
 }
 
+#[instrument(level = "trace")]
 pub fn get_value(stream: &mut TcpStream, shared_map: &DashMap<Vec<u8>, Vec<u8>>) -> bool {
     let mut request_key_length: [u8; 2] = [0, 0];
     printerror!(stream.read_exact(&mut request_key_length));
@@ -66,6 +69,7 @@ pub fn get_value(stream: &mut TcpStream, shared_map: &DashMap<Vec<u8>, Vec<u8>>)
     true
 }
 
+#[instrument(level = "trace")]
 pub fn delete_key_value(stream: &mut TcpStream, shared_map: &DashMap<Vec<u8>, Vec<u8>>) -> bool {
     let mut request_key_length: [u8; 2] = [0, 0];
     printerror!(stream.read_exact(&mut request_key_length));

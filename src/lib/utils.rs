@@ -4,7 +4,7 @@ macro_rules! printerror {
         match $op {
             Ok(val) => val,
             Err(e) => {
-                eprintln!("Error! {:?}", e);
+                tracing::error!(error = %e, "Operation failed");
                 return false;
             }
         }
