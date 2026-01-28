@@ -1,21 +1,23 @@
 
 use std::{net::TcpListener, thread, sync::Arc};
 use dashmap::DashMap;
-use tracing::error;
+use tracing::{error, info};
 mod connection;
 mod operations;
-mod lib;
+mod utilities;
+mod trace_logs;
 use connection::handle_connection;
-use lib::envvariables::loaddotenv;
-
+use utilities::envvariables::loaddotenv;
+use trace_logs::initialize_tracing::init_tracing;
 fn main() {
+    let env_data = loaddotenv();
 
-    tracing_subscriber::fmt()
-    .with_max_level(tracing::Level::TRACE)
-    .init();
+    let _guard = init_tracing();
+
+    info!("Application starting");
 
     let shared_map: Arc<DashMap<Vec<u8>, Vec<u8>>> = Arc::new(DashMap::new());
-    match TcpListener::bind(loaddotenv()) {
+    match TcpListener::bind(env_data) {
         Ok(listener) => {
             for stream_result in listener.incoming() {
                 match stream_result {
