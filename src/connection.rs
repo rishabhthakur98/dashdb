@@ -3,7 +3,7 @@ use dashmap::DashMap;
 use crate::operations::{delete_key_value, get_value, set_key_value};
 use tracing::{info, error, instrument};
 
-#[instrument(level = "trace")]
+#[instrument(skip(stream, shared_map))]
 pub fn handle_connection(mut stream: TcpStream, shared_map: Arc<DashMap<Vec<u8>, Vec<u8>>>) {
     loop {
         let mut opcode = [0; 1];
@@ -14,19 +14,16 @@ pub fn handle_connection(mut stream: TcpStream, shared_map: Arc<DashMap<Vec<u8>,
             }
             Ok(_) => match opcode[0] {
                 1 => {
-                    info!("set key value function");
                     if !set_key_value(&mut stream, &shared_map) {
                         break;
                     }
                 }
                 2 => {
-                    info!("get value function");
                     if !get_value(&mut stream, &shared_map) {
                         break;
                     }
                 }
                 3 => {
-                    info!("delete key value function");
                     if !delete_key_value(&mut stream, &shared_map) {
                         break;
                     }

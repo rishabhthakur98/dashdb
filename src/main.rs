@@ -1,14 +1,13 @@
 
 use std::{net::TcpListener, thread, sync::Arc};
 use dashmap::DashMap;
-use tracing::{info, error, instrument};
+use tracing::error;
 mod connection;
 mod operations;
 mod lib;
 use connection::handle_connection;
 use lib::envvariables::loaddotenv;
 
-#[instrument(level = "trace")]
 fn main() {
 
     tracing_subscriber::fmt()
