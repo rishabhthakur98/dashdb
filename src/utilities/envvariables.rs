@@ -5,6 +5,7 @@ use tracing::{info, error, instrument};
 #[instrument(level = "trace")]
 pub fn loaddotenv() -> String {
     dotenv().ok();
+    
     match env::var("SERVER_URL") {
         Ok(server_url) => {
             info!("Using ip and port: {}", server_url);
