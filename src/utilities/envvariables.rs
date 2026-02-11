@@ -11,7 +11,7 @@ pub fn loaddotenv() -> String {
         }
         Err(e) => {
             eprintln!("Error {:?}", e);
-            println!("Using default ip and port: 127.0.0.1:8080");
+            println!("Using default ip and port: 0.0.0.0:8080");
             return String::from("0.0.0.0:8080");
         }
     }

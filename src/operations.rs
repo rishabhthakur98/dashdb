@@ -47,9 +47,9 @@ pub async fn get_value(stream: &mut TcpStream, shared_map: &DashMap<Vec<u8>, Vec
             let value_length_u16: u16 = value_length as u16;
             let value_length_array = value_length_u16.to_be_bytes();
             
-            &response.push(1);
-            &response.extend(&value_length_array);
-            &response.extend(value);
+            response.push(1);
+            response.extend(&value_length_array);
+            response.extend(value);
             
         }
         None => {
