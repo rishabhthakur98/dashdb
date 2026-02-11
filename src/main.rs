@@ -2,22 +2,16 @@
 use std::sync::Arc;
 use dashmap::DashMap;
 use tokio::net::TcpListener;
-use tracing::{error, info};
 mod connection;
 mod operations;
 mod utilities;
-mod trace_logs;
 use connection::handle_connection;
 use utilities::envvariables::loaddotenv;
-use trace_logs::initialize_tracing::init_tracing;
 
 #[tokio::main]
 async fn main() {
     let env_data = loaddotenv();
 
-    let _guard = init_tracing();
-
-    info!("Application starting");
 
     let shared_map: Arc<DashMap<Vec<u8>, Vec<u8>>> = Arc::new(DashMap::new());
 
@@ -39,7 +33,7 @@ async fn main() {
         });
             } ,
             Err(e) => {
-                error!("Error {:?}", e);
+                eprintln!("Error {:?}", e);
             }
         
         }
@@ -48,9 +42,8 @@ async fn main() {
     
     }
 
-
         Err(e) => {
-            error!("Error {:?}", e);
+            eprintln!("Error {:?}", e);
         }
     }
 }
