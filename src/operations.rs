@@ -1,89 +1,70 @@
-use tokio::{io::{AsyncReadExt, AsyncWriteExt}, net::TcpStream};
 use dashmap::DashMap;
-use crate::printerror;
+use std::io::Result;
+use std::sync::Arc;
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio::net::tcp::{OwnedReadHalf, OwnedWriteHalf};
 
-pub async fn set_key_value(stream: &mut TcpStream, shared_map: &DashMap<Vec<u8>, Vec<u8>>) -> bool {
-    let mut request_key_value_length: [u8; 4] = [0, 0, 0, 0];
-    printerror!(stream.read_exact(&mut request_key_value_length));
-
-    let request_key_length =
-        u16::from_be_bytes([request_key_value_length[0], request_key_value_length[1]]);
-    let request_value_length =
-        u16::from_be_bytes([request_key_value_length[2], request_key_value_length[3]]);
-    let request_body_length: usize =
-        (request_key_length as usize) + (request_value_length as usize);
-
-    let mut request_body: Vec<u8> = vec![0; request_body_length];
-    printerror!(stream.read_exact(&mut request_body));
-
-    let request_value: Vec<u8> = request_body.split_off(request_key_length as usize);
-    let request_key: Vec<u8> = request_body;
-
-    shared_map.insert(request_key, request_value);
-
-    let response: [u8; 1] = [1];
-    printerror!(stream.write_all(&response));
-
-    printerror!(stream.flush());
-
-    true
+pub async fn set_key_value(
+    readhalf_mutable_reference: &mut OwnedReadHalf,
+    writehalf_mutable_reference: &mut OwnedWriteHalf,
+    arc_dashmap_mutable_reference: &mut Arc<DashMap<Vec<u8>, Vec<u8>>>,
+) -> Result<()> {
+    let key_length = readhalf_mutable_reference.read_u16().await?;
+    let value_length = readhalf_mutable_reference.read_u32().await?;
+    let mut key: Vec<u8> = vec![0u8; key_length as usize];
+    let mut value: Vec<u8> = vec![0u8; value_length as usize];
+    readhalf_mutable_reference.read_exact(&mut key).await?;
+    readhalf_mutable_reference.read_exact(&mut value).await?;
+    arc_dashmap_mutable_reference.insert(key, value);
+    writehalf_mutable_reference.write_u8(1).await?;
+    writehalf_mutable_reference.flush().await?;
+    Ok(())
 }
 
-pub async fn get_value(stream: &mut TcpStream, shared_map: &DashMap<Vec<u8>, Vec<u8>>) -> bool {
-    let mut request_key_length: [u8; 2] = [0, 0];
-    printerror!(stream.read_exact(&mut request_key_length));
+pub async fn get_value(
+    readhalf_mutable_reference: &mut OwnedReadHalf,
+    writehalf_mutable_reference: &mut OwnedWriteHalf,
+    arc_dashmap_mutable_reference: &mut Arc<DashMap<Vec<u8>, Vec<u8>>>,
+) -> Result<()> {
+    let key_length = readhalf_mutable_reference.read_u16().await?;
+    let mut key: Vec<u8> = vec![0u8; key_length as usize];
+    readhalf_mutable_reference.read_exact(&mut key).await?;
 
-    let request_key_length = u16::from_be_bytes([request_key_length[0], request_key_length[1]]);
-
-    let mut request_key: Vec<u8> = vec![0; request_key_length as usize];
-    printerror!(stream.read_exact(&mut request_key));
-
-    let mut response: Vec<u8> = Vec::with_capacity(1);
-    match shared_map.get(&request_key) {
+    match arc_dashmap_mutable_reference.get(&key) {
         Some(key_value) => {
-            
+            writehalf_mutable_reference.write_u8(1).await?;
             let value = key_value.value();
             let value_length: usize = value.len();
-            let value_length_u16: u16 = value_length as u16;
-            let value_length_array = value_length_u16.to_be_bytes();
-            
-            response.push(1);
-            response.extend(&value_length_array);
-            response.extend(value);
-            
+            writehalf_mutable_reference
+                .write_u32(value_length as u32)
+                .await?;
+            writehalf_mutable_reference.write_all(value).await?;
         }
         None => {
-            response.push(2);
+            writehalf_mutable_reference.write_u8(2).await?;
         }
     }
-    printerror!(stream.write_all(&response));
-
-    printerror!(stream.flush());
-
-    true
+    writehalf_mutable_reference.flush().await?;
+    Ok(())
 }
 
-pub async fn delete_key_value(stream: &mut TcpStream, shared_map: &DashMap<Vec<u8>, Vec<u8>>) -> bool {
-    let mut request_key_length: [u8; 2] = [0, 0];
-    printerror!(stream.read_exact(&mut request_key_length));
+pub async fn delete_key_value(
+    readhalf_mutable_reference: &mut OwnedReadHalf,
+    writehalf_mutable_reference: &mut OwnedWriteHalf,
+    arc_dashmap_mutable_reference: &mut Arc<DashMap<Vec<u8>, Vec<u8>>>,
+) -> Result<()> {
+    let key_length = readhalf_mutable_reference.read_u16().await?;
+    let mut key: Vec<u8> = vec![0u8; key_length as usize];
+    readhalf_mutable_reference.read_exact(&mut key).await?;
 
-    let request_key_length = u16::from_be_bytes([request_key_length[0], request_key_length[1]]);
-
-    let mut request_key: Vec<u8> = vec![0; request_key_length as usize];
-    printerror!(stream.read_exact(&mut request_key));
-
-    let mut response: [u8; 1] = [0];
-    match shared_map.remove(&request_key) {
+    match arc_dashmap_mutable_reference.remove(&key) {
         Some(_) => {
-            response[0] = 1;
+            writehalf_mutable_reference.write_u8(1).await?;
         }
         None => {
-            response[0] = 2;
+            writehalf_mutable_reference.write_u8(2).await?;
         }
     }
-    printerror!(stream.write_all(&response));
-
-    printerror!(stream.flush());
-
-    true
+    writehalf_mutable_reference.flush().await?;
+    Ok(())
 }

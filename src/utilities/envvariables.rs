@@ -1,9 +1,9 @@
-use std::env;
 use dotenvy::dotenv;
+use std::env;
 
 pub fn loaddotenv() -> String {
     dotenv().ok();
-    
+
     match env::var("SERVER_URL") {
         Ok(server_url) => {
             println!("Using ip and port: {}", server_url);

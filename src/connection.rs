@@ -1,29 +1,37 @@
-use std::sync::Arc;
-use tokio::{net::TcpStream, io::AsyncReadExt};
 use dashmap::DashMap;
+use std::sync::Arc;
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio::net::TcpStream;
 
-use crate::operations::{delete_key_value, get_value, set_key_value};
+use crate::authenticate::authenticate;
+use crate::choose_operation::choose_operation;
 
-pub async fn handle_connection(mut stream: TcpStream, shared_map: Arc<DashMap<Vec<u8>, Vec<u8>>>) {
-    loop {
-        let mut opcode = [0; 1];
-      match stream.read_exact(&mut opcode).await {
-            Ok(_) => match opcode[0] {
-                1 => if !set_key_value(&mut stream, &shared_map).await { 
-                    break; 
-                },
-                2 => if !get_value(&mut stream, &shared_map).await { 
-                    break; 
-                },
-                3 => if !delete_key_value(&mut stream, &shared_map).await { 
-                    break;
-                 },
-                _ => {
-                    eprintln!("Unknown opcode: {}", opcode[0]);
-                    break;
-                }
-            },
-            Err(_) => break,
+pub async fn handle_connection(stream: TcpStream, mut arc_dashmap: Arc<DashMap<Vec<u8>, Vec<u8>>>) {
+    let (mut readhalf, mut writehalf) = stream.into_split();
+
+    if let Err(e) = authenticate(&mut readhalf, &mut writehalf).await {
+        eprintln!("Error {:?}", e);
+        let _ = writehalf.shutdown().await;
+        return;
         }
+        
+
+    loop {
+        match readhalf.read_u8().await {
+            Ok(opcode) => {
+                if let Err(e) =
+                    choose_operation(&mut readhalf, &mut writehalf, &mut arc_dashmap, opcode).await
+                {
+                    eprintln!("Error {:?}", e);
+                    let _ = writehalf.shutdown().await;
+                    return;
+                }
+            }
+            Err(e) =>{
+                eprintln!("Error {:?}", e);
+                return
+            }
+            
+        };
     }
 }
