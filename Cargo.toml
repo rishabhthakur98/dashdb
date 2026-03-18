@@ -3,7 +3,10 @@ name = "dashdb"
 version = "0.1.0"
 edition = "2024"
 
+[features]
+local-env = ["dep:dotenvy"]
+
 [dependencies]
-dotenvy = "0.15.7"
+dotenvy = { version = "0.15.7", optional = true }
 dashmap = "6.1.0"
 tokio = { version = "1.49.0", features = ["full"] }
