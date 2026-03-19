@@ -3,11 +3,10 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::tcp::{OwnedReadHalf, OwnedWriteHalf};
 use tracing::{error, info};
 
-static PASSWORD_ARRAY: [u8; 8] = [1, 2, 3, 4, 5, 6, 7, 8];
-
 pub async fn authenticate(
     readhalf_mutable_reference: &mut OwnedReadHalf,
     writehalf_mutable_reference: &mut OwnedWriteHalf,
+    auth_token: &str,
 ) -> Result<()> {
     let opcode: u8 = readhalf_mutable_reference.read_u8().await?;
     if opcode != 255 {
@@ -25,7 +24,10 @@ pub async fn authenticate(
         .read_exact(&mut password_vector)
         .await?;
 
-    if &PASSWORD_ARRAY[..] != &password_vector[..] {
+  
+    let expected_password = auth_token.as_bytes();
+
+    if expected_password != &password_vector[..] {
         writehalf_mutable_reference.write_u8(2).await?;
         error!("Authentication failed: Invalid password provided");
         return Err(Error::new(

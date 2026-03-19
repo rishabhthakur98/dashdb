@@ -26,8 +26,9 @@ async fn main() {
                 match listener.accept().await {
                     Ok((stream, _addr)) => {
                         let dashmap_arc_clone = arc_dashmap.clone();
+                        let auth_token = env_vars.auth_token.clone(); 
                         tokio::spawn(async move {
-                            handle_connection(stream, dashmap_arc_clone).await;
+                            handle_connection(stream, dashmap_arc_clone, auth_token).await;
                         });
                     }
                     Err(e) => {

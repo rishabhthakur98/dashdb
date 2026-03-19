@@ -8,10 +8,11 @@ use tracing::error;
 use crate::authenticate::authenticate;
 use crate::choose_operation::choose_operation;
 
-pub async fn handle_connection(stream: TcpStream, dashmap: Arc<DashMap<Vec<u8>, Vec<u8>>>) {
+pub async fn handle_connection(stream: TcpStream, dashmap: Arc<DashMap<Vec<u8>, Vec<u8>>>, auth_token: String) {
     let (mut readhalf, mut writehalf) = stream.into_split();
 
-    if let Err(e) = authenticate(&mut readhalf, &mut writehalf).await {
+
+    if let Err(e) = authenticate(&mut readhalf, &mut writehalf, &auth_token).await {
         error!("Error {:?}", e);
         let _ = writehalf.shutdown().await;
         return;
