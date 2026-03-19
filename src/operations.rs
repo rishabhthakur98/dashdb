@@ -2,6 +2,7 @@ use dashmap::DashMap;
 use std::io::Result;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::tcp::{OwnedReadHalf, OwnedWriteHalf};
+use tracing::{debug, info};
 
 pub async fn set_key_value(
     readhalf_mutable_reference: &mut OwnedReadHalf,
@@ -14,7 +15,10 @@ pub async fn set_key_value(
     let mut value: Vec<u8> = vec![0u8; value_length as usize];
     readhalf_mutable_reference.read_exact(&mut key).await?;
     readhalf_mutable_reference.read_exact(&mut value).await?;
+    
     dashmap.insert(key, value);
+    info!("Key-value pair inserted successfully");
+    
     writehalf_mutable_reference.write_u8(1).await?;
     writehalf_mutable_reference.flush().await?;
     Ok(())
@@ -38,9 +42,11 @@ pub async fn get_value(
                 .write_u32(value_length as u32)
                 .await?;
             writehalf_mutable_reference.write_all(value).await?;
+            debug!("Value retrieved successfully");
         }
         None => {
             writehalf_mutable_reference.write_u8(2).await?;
+            debug!("Key not found for retrieval");
         }
     }
     writehalf_mutable_reference.flush().await?;
@@ -59,9 +65,11 @@ pub async fn delete_key_value(
     match dashmap.remove(&key) {
         Some(_) => {
             writehalf_mutable_reference.write_u8(1).await?;
+            info!("Key deleted successfully");
         }
         None => {
             writehalf_mutable_reference.write_u8(2).await?;
+            debug!("Key not found for deletion");
         }
     }
     writehalf_mutable_reference.flush().await?;

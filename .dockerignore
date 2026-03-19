@@ -1,0 +1,10 @@
+target/
+.git/
+.env
+.idea/
+logs/
+**/*.rs.bk
+*.pdb
+mutants.out*/
+Dockerfile
+docker-compose.yml

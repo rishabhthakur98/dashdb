@@ -1,9 +1,9 @@
 use dashmap::DashMap;
 use std::io::{Error, ErrorKind, Result};
 use tokio::net::tcp::{OwnedReadHalf, OwnedWriteHalf};
+use tracing::error;
 
 use crate::operations::{delete_key_value, get_value, set_key_value};
-
 
 pub async fn choose_operation(
     readhalf_mutable_reference: &mut OwnedReadHalf,
@@ -37,6 +37,7 @@ pub async fn choose_operation(
             .await;
         }
         _ => {
+            error!("Invalid opcode received: {}", opcode);
             return Err(Error::new(
                 ErrorKind::InvalidData,
                 "Invalid opcode received",
