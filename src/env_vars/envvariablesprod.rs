@@ -15,7 +15,6 @@ pub fn load_and_log_env() -> EnvVariables {
 
     EnvVariables {
         server_url,
-        log_level,
-        auth_token,
+        auth_token
     }
 }

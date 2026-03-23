@@ -6,7 +6,7 @@ use tracing::{error, info};
 mod authenticate;
 mod choose_operation;
 mod connection;
-pub mod dashdb_logging;
+mod dashdb_logging;
 mod env_vars;
 mod graceful_shutdown;
 mod operations;

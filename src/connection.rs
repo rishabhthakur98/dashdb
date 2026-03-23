@@ -3,12 +3,21 @@ use std::sync::Arc;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpStream;
 
-use tracing::error;
+use tracing::{error, debug};
 
 use crate::authenticate::authenticate;
 use crate::choose_operation::choose_operation;
 
 pub async fn handle_connection(stream: TcpStream, dashmap: Arc<DashMap<Vec<u8>, Vec<u8>>>, auth_token: String) {
+
+    debug!(
+    "New Connection | src_addr: {:?} | dest_addr: {:?}",
+    stream.peer_addr(),
+    stream.local_addr()
+    );
+
+
+
     let (mut readhalf, mut writehalf) = stream.into_split();
 
 
